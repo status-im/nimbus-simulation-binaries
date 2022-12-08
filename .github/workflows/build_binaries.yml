@@ -1,0 +1,130 @@
+on:
+  push:
+    paths-ignore: ['media/**', 'docs/**', '**/*.md']
+    branches:
+    - master
+    pull_request:
+      paths-ignore: ['media/**', 'docs/**', '**/*.md']
+    workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - os: linux
+            cpu: amd64
+          - os: linux
+            cpu: arm64
+          - os: macos
+            cpu: amd64
+          - os: macos
+            cpu: arm64
+          - os: windows
+            cpu: amd64
+        include:
+          - target:
+              os: linux
+            builder: ubuntu-20.04
+            shell: bash
+          - target:
+              os: macos
+            builder: macos-11
+            shell: bash
+          - target:
+              os: windows
+            builder: windows-2019
+            shell: msys2 {0}
+
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+
+    name: '${{ matrix.target.os }}-${{ matrix.target.cpu }}'
+    runs-on: ${{ matrix.builder }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        # Fails on nimyaml tests:
+        with:
+          submodules: true
+
+      - name: MSYS2 (Windows amd64)
+        if: runner.os == 'Windows' && matrix.target.cpu == 'amd64'
+        uses: msys2/setup-msys2@v2
+        with:
+          path-type: inherit
+          install: >-
+            base-devel
+            git
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '^1.18.5' # The Go version to download (if necessary) and use.
+
+      - name: Clone Geth
+        run: |
+          git clone https://github.com/mdehoog/go-ethereum --depth 1
+          cd go-ethereum
+          git remote add withdrawals https://github.com/lightclient/go-ethereum.git
+          git fetch withdrawals withdrawals-timestamp:withdrawals-timestamp
+          echo "PWD: " $(pwd)
+
+      - name: Build Geth/withdrawals-timestamp
+        run: |
+          cd go-ethereum
+          git checkout withdrawals-timestamp
+          env GO111MODULE=on go run build/ci.go install --arch ${{ matrix.target.cpu }} ./cmd/geth
+          TARGET_DIR=../geth/withdrawals-timestamp
+
+          mkdir -p "$TARGET_DIR"
+          cp build/bin/geth "$TARGET_DIR"
+
+      - name: Build Geth/eip-4844
+        run: |
+          cd go-ethereum
+          git checkout eip-4844
+          env GO111MODULE=on go run build/ci.go install --arch ${{ matrix.target.cpu }} ./cmd/geth
+          TARGET_DIR=../geth/eip-4844
+          mkdir -p "$TARGET_DIR"
+          cp build/bin/geth "$TARGET_DIR"
+
+      - name: Compress the Geth binaries
+        run: tar -c -z -v -f geth-binaries-${{ matrix.target.os }}-${{ matrix.target.cpu }}.tar.gz geth/
+
+      # The upload creates a combined report that gets posted as a comment on the PR
+      # https://github.com/EnricoMi/publish-unit-test-result-action
+      - name: Upload the Geth Binaries
+        uses: actions/upload-artifact@v2
+        with:
+          name: geth-binaries-${{ matrix.target.os }}-${{ matrix.target.cpu }}.tar.gz
+          path: geth-binaries-${{ matrix.target.os }}-${{ matrix.target.cpu }}.tar.gz
+
+  create-github-release:
+    name: Create Github Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artefacts
+        uses: actions/download-artifact@v2
+
+      - uses: ncipollo/release-action@v1
+        with:
+          name: Latest Geth Binaries
+          artifacts: "*/*"
+          allowUpdates: true
+          makeLatest: true
+          prerelease: true
+          tag: latest
+
+      - name: Delete artefacts
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          failOnError: false
+          name: "geth-binaries-*"
