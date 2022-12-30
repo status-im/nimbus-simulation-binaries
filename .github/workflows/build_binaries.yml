@@ -122,3 +122,29 @@ jobs:
         with:
           name: geth-binaries-${{ matrix.target.os }}-${{ matrix.target.cpu }}.tar.gz
           path: geth-binaries.tar.gz
+
+  create-github-release:
+    name: Prepare pre-release
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: ncipollo/release-action@v1
+        with:
+          name: Latest Geth Binaries
+          artifacts: "*"
+          makeLatest: true
+          prerelease: true
+
+      - name: Delete artefacts
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          failOnError: false
+          name: |
+            geth-binaries-linux-amd64.tar.gz
+            geth-binaries-linux-arm64.tar.gz
+            geth-binaries-macos-amd64.tar.gz
+            geth-binaries-macos-arm64.tar.gz
+            geth-binaries-windows-amd64.tar.gz
+
