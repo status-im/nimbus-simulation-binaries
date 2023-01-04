@@ -66,21 +66,35 @@ jobs:
         with:
           go-version: '^1.18.5' # The Go version to download (if necessary) and use.
 
+      - name: Install the ARM cross-compilation toolchain
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        if: runner.os == 'Linux' && matrix.target.cpu == 'arm64'
+        with:
+          packages: gcc-aarch64-linux-gnu
+          version: 1.0
+
       - name: Clone Geth
         run: |
           git clone https://github.com/mdehoog/go-ethereum --depth 1
           cd go-ethereum
           git remote add withdrawals https://github.com/lightclient/go-ethereum.git
           git fetch withdrawals withdrawals-timestamp:withdrawals-timestamp
-          echo "PWD: " $(pwd)
+
+      - name: Setup the cross-compilation flags
+        run: |
+          if [[ '${{ runner.os }}' == 'Linux' && '${{ matrix.target.cpu }}' == 'arm64' ]]; then
+            CC_ARG="--cc gcc-aarch64-linux-gnu"
+          else
+            CC_ARG=""
+          fi
+          echo "CC_ARG=$CC_ARG" >> $GITHUB_ENV
 
       - name: Build Geth/withdrawals-timestamp
         run: |
           cd go-ethereum
           git checkout withdrawals-timestamp
-          env GO111MODULE=on go run build/ci.go install --arch ${{ matrix.target.cpu }} ./cmd/geth
+          env GO111MODULE=on go run build/ci.go install $CC_ARG --arch ${{ matrix.target.cpu }} ./cmd/geth
           TARGET_DIR=../geth/withdrawals-timestamp
-
           mkdir -p "$TARGET_DIR"
           cp build/bin/geth "$TARGET_DIR"
 
@@ -88,7 +102,7 @@ jobs:
         run: |
           cd go-ethereum
           git checkout eip-4844
-          env GO111MODULE=on go run build/ci.go install --arch ${{ matrix.target.cpu }} ./cmd/geth
+          env GO111MODULE=on go run build/ci.go install $CC_ARG --arch ${{ matrix.target.cpu }} ./cmd/geth
           TARGET_DIR=../geth/eip-4844
           mkdir -p "$TARGET_DIR"
           cp build/bin/geth "$TARGET_DIR"
