@@ -66,12 +66,12 @@ jobs:
         with:
           go-version: '1.18.1' # The Go version to download (if necessary) and use.
 
-      - name: Install the ARM cross-compilation toolchain
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        if: runner.os == 'Linux' && matrix.target.cpu == 'arm64'
-        with:
-          packages: gcc-aarch64-linux-gnu
-          version: 1.0
+      #- name: Install the ARM cross-compilation toolchain
+      #  uses: awalsh128/cache-apt-pkgs-action@latest
+      #  if: runner.os == 'Linux' && matrix.target.cpu == 'arm64'
+      #  with:
+      #    packages: gcc-aarch64-linux-gnu
+      #    version: 1.0
 
       - name: Clone Geth
         run: |
@@ -82,6 +82,7 @@ jobs:
 
       - name: Setup the cross-compilation flags
         run: |
+          apt-get install -y gcc-aarch64-linux-gnu
           if [[ '${{ runner.os }}' == 'Linux' && '${{ matrix.target.cpu }}' == 'arm64' ]]; then
             CC_ARG="--cc aarch64-linux-gnu-gcc"
           else
