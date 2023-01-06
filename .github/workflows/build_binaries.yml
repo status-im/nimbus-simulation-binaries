@@ -83,7 +83,10 @@ jobs:
       - name: Setup the cross-compilation flags
         run: |
           if [[ '${{ runner.os }}' == 'Linux' && '${{ matrix.target.cpu }}' == 'arm64' ]]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
+            sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+            aarch64-linux-gnu-gcc --version
+            aarch64-linux-gnu-gcc --help
+            man aarch64-linux-gnu-gcc | tee
             CC_ARG="--cc aarch64-linux-gnu-gcc"
           else
             CC_ARG=""
