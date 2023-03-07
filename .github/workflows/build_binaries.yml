@@ -75,7 +75,7 @@ jobs:
 
       - name: Clone Geth
         run: |
-          git clone https://github.com/mdehoog/go-ethereum --depth 1
+          git clone https://github.com/ethereum/go-ethereum --depth 1
           cd go-ethereum
           git remote add deneb https://github.com/mdehoog/go-ethereum
           git fetch deneb 5ee27387530f68a782708e2f1a7d4b67437df8a3:deneb
