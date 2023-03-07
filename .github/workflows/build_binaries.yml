@@ -77,8 +77,8 @@ jobs:
         run: |
           git clone https://github.com/mdehoog/go-ethereum --depth 1
           cd go-ethereum
-          git remote add marius https://github.com/MariusVanDerWijden/go-ethereum.git
-          git fetch marius f7ab681b41e4067cb9c1c759afcde7d2b075e7ba:capella
+          git remote add deneb https://github.com/mdehoog/go-ethereum
+          git fetch deneb 5ee27387530f68a782708e2f1a7d4b67437df8a3:deneb
 
       - name: Setup the cross-compilation flags
         run: |
@@ -93,21 +93,21 @@ jobs:
           fi
           echo "CC_ARG=$CC_ARG" >> $GITHUB_ENV
 
-      - name: Build Geth/withdrawals-timestamp
+      - name: Build Geth/Capella
         run: |
           cd go-ethereum
-          git checkout capella
+          git checkout master
           env GO111MODULE=on go run build/ci.go install $CC_ARG ./cmd/geth
           TARGET_DIR=../geth/capella
           mkdir -p "$TARGET_DIR"
           cp build/bin/geth "$TARGET_DIR"
 
-      - name: Build Geth/eip-4844
+      - name: Build Geth/Deneb
         run: |
           cd go-ethereum
-          git checkout eip-4844
+          git checkout deneb
           env GO111MODULE=on go run build/ci.go install $CC_ARG --arch ${{ matrix.target.cpu }} ./cmd/geth
-          TARGET_DIR=../geth/eip-4844
+          TARGET_DIR=../geth/deneb
           mkdir -p "$TARGET_DIR"
           cp build/bin/geth "$TARGET_DIR"
 
