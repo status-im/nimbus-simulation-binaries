@@ -93,7 +93,7 @@ jobs:
           fi
           echo "CC_ARG=$CC_ARG" >> $GITHUB_ENV
 
-      - name: Build Geth/Shanghai
+      - name: Build Geth/Capella
         run: |
           cd go-ethereum
           git checkout master
