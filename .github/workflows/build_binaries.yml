@@ -15,8 +15,8 @@ jobs:
         target:
           - os: linux
             cpu: amd64
-          - os: linux
-            cpu: arm64
+          #- os: linux
+          #  cpu: arm64
           - os: macos
             cpu: amd64
           - os: macos
@@ -114,7 +114,7 @@ jobs:
       # The upload creates a combined report that gets posted as a comment on the PR
       # https://github.com/EnricoMi/publish-unit-test-result-action
       - name: Upload the Geth Binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: geth-binaries-${{ matrix.target.os }}-${{ matrix.target.cpu }}.tar.gz
           path: geth-binaries-${{ matrix.target.os }}-${{ matrix.target.cpu }}.tar.gz
